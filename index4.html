@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Birthday! 甜蜜生日闖關冒險 🎂</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- SortableJS for Touch & Drag -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=MochiyomPop+POne&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 50%, #f3e8ff 100%);
+            min-height: 100vh;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .font-pop { font-family: 'MochiyomPop POne', sans-serif; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            box-shadow: 0 20px 40px rgba(244, 114, 182, 0.15);
+        }
+        .stamp-redeemed {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-12deg) scale(0);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 4px solid #ef4444;
+            color: #ef4444;
+            font-weight: 900;
+            padding: 4px 16px;
+            border-radius: 12px;
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+            pointer-events: none;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+        }
+        .coupon-card.is-redeemed .stamp-redeemed {
+            transform: translate(-50%, -50%) rotate(-12deg) scale(1);
+        }
+        .flame-animation {
+            animation: flicker 0.8s infinite alternate ease-in-out;
+            transform-origin: center bottom;
+        }
+        @keyframes flicker {
+            0% { transform: scale(1) rotate(-2deg); opacity: 0.95; }
+            100% { transform: scale(1.15) rotate(2deg); opacity: 1; filter: drop-shadow(0 0 12px #f59e0b); }
+        }
+    </style>
+</head>
+<body class="text-gray-800 pb-12 overflow-x-hidden">
+
+    <!-- Top Navigation -->
+    <header class="p-4 flex justify-between items-center max-w-2xl mx-auto">
+        <div class="flex items-center gap-2">
+            <span class="text-2xl">💖</span>
+            <h1 class="font-bold text-pink-600 text-lg sm:text-xl font-pop">張靖昇，生日快樂！</h1>
+        </div>
+        <button id="cfg-btn" class="p-2 text-gray-500 hover:text-pink-600 transition text-xl">
+            <i class="fa-solid fa-gear"></i>
+        </button>
+    </header>
+
+    <!-- Main Game Container -->
+    <main class="max-w-2xl mx-auto px-4">
+        
+        <!-- Progress Bar -->
+        <div class="mb-6 glass-card p-4 rounded-2xl">
+            <div class="flex justify-between items-center text-xs font-bold text-pink-500 mb-2">
+                <span id="stg-lbl">闖關進度：第一關 / 共五關</span>
+                <span id="stg-pct">20%</span>
+            </div>
+            <div class="w-full bg-pink-100 rounded-full h-3 overflow-hidden">
+                <div id="stg-bar" class="bg-gradient-to-r from-pink-400 to-purple-500 h-3 rounded-full transition-all duration-500" style="width: 20%;"></div>
+            </div>
+        </div>
+
+        <!-- STAGE 1: Photo Timeline Sort -->
+        <section id="s1" class="glass-card rounded-3xl p-6 sm:p-8">
+            <div class="text-center mb-6">
+                <span class="bg-pink-100 text-pink-600 px-3 py-1 rounded-full text-xs font-bold tracking-wider">STAGE 01</span>
+                <h2 class="text-2xl font-bold font-pop text-gray-800 mt-2">🧩 時光相冊回憶排序</h2>
+                <p class="text-sm text-gray-500 mt-1">請拖拽或點擊相片，按時間先後順序進行排列吧！</p>
+            </div>
+
+            <!-- Photos Grid -->
+            <div id="photo-grid" class="grid grid-cols-3 gap-3 mb-6">
+                <!-- Dynamically Inserted -->
+            </div>
+
+            <button id="s1-submit" class="w-full py-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-2xl shadow-lg hover:brightness-110 active:scale-95 transition text-lg flex items-center justify-center gap-2">
+                <span>驗證時間順序</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </section>
+
+        <!-- STAGE 2: QA Quiz -->
+        <section id="s2" class="glass-card rounded-3xl p-6 sm:p-8 hidden">
+            <div class="text-center mb-6">
+                <span class="bg-purple-100 text-purple-600 px-3 py-1 rounded-full text-xs font-bold tracking-wider">STAGE 02</span>
+                <h2 class="text-2xl font-bold font-pop text-gray-800 mt-2">❓ 我們的時光大考驗</h2>
+                <p class="text-sm text-gray-500 mt-1">回答關於我們的 5 個小秘密（請填寫簡答）</p>
+            </div>
+
+            <div id="qa-list" class="space-y-6 mb-8">
+                <!-- Dynamically generated -->
+            </div>
+
+            <button id="s2-submit" class="w-full py-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-2xl shadow-lg hover:brightness-110 active:scale-95 transition text-lg flex items-center justify-center gap-2">
+                <span>提交答案</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </section>
+
+        <!-- STAGE 3: Password Box -->
+        <section id="s3" class="glass-card rounded-3xl p-6 sm:p-8 text-center hidden">
+            <span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold tracking-wider">STAGE 03</span>
+            <h2 class="text-2xl font-bold font-pop text-gray-800 mt-2 mb-2">🔐 解鎖愛的寶箱</h2>
+            <p class="text-sm text-gray-500 mb-6">請輸入我們的專屬紀念日密碼（4位數字）</p>
+
+            <div class="text-6xl mb-6 animate-bounce">🎁</div>
+
+            <div class="flex justify-center gap-3 mb-6">
+                <input type="password" maxlength="4" id="pwd-in" class="w-48 text-center text-3xl font-bold tracking-widest py-3 border-2 border-pink-300 rounded-2xl focus:outline-none focus:border-pink-500 bg-white" placeholder="••••">
+            </div>
+
+            <button id="s3-submit" class="w-full py-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-2xl shadow-lg hover:brightness-110 active:scale-95 transition text-lg">
+                開啟寶箱✨
+            </button>
+        </section>
+
+        <!-- STAGE 4: Cake Wish -->
+        <section id="s4" class="glass-card rounded-3xl p-6 sm:p-8 text-center hidden">
+            <span class="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-bold tracking-wider">STAGE 04</span>
+            <h2 class="text-2xl font-bold font-pop text-gray-800 mt-2 mb-1">🎂 許願吹蠟燭時間</h2>
+            <p class="text-sm text-gray-500 mb-6">閉上眼睛許個願，然後點擊蠟燭或對著麥克風吹氣吧！</p>
+
+            <!-- Interactive Cake Visual -->
+            <div class="relative w-48 h-48 mx-auto mb-8 flex flex-col items-center justify-end">
+                <!-- Candle Flame -->
+                <div id="flame" class="flame-animation cursor-pointer mb-1 z-10">
+                    <div class="w-6 h-8 bg-gradient-to-t from-orange-500 via-yellow-400 to-yellow-100 rounded-full shadow-lg"></div>
+                </div>
+                <!-- Candle Body -->
+                <div class="w-4 h-12 bg-gradient-to-r from-pink-300 to-pink-400 rounded-t-sm z-10 mb-[-2px]"></div>
+                <!-- Cake Base -->
+                <div class="w-40 h-16 bg-pink-200 rounded-t-3xl border-b-8 border-pink-300 relative flex items-center justify-center shadow-md">
+                    <span class="text-2xl">🍓 🎂 🍓</span>
+                </div>
+                <div class="w-48 h-10 bg-yellow-100 rounded-b-2xl border-t-2 border-yellow-200 shadow-lg"></div>
+            </div>
+
+            <div class="flex justify-center gap-3">
+                <button id="blow-btn" class="px-6 py-3 bg-pink-500 text-white font-bold rounded-xl shadow hover:bg-pink-600 transition flex items-center gap-2">
+                    <i class="fa-solid fa-wind"></i> 點擊吹熄蠟燭
+                </button>
+            </div>
+        </section>
+
+        <!-- STAGE 5: Final Love Letters & Coupons -->
+        <section id="s5" class="glass-card rounded-3xl p-6 sm:p-8 hidden">
+            <div class="text-center mb-6">
+                <span class="bg-pink-100 text-pink-600 px-3 py-1 rounded-full text-xs font-bold tracking-wider">FINAL STAGE</span>
+                <h2 class="text-3xl font-bold font-pop text-pink-600 mt-2">💌 恭喜過關！真心話與放閃券</h2>
+            </div>
+
+            <!-- Letter Card -->
+            <div class="bg-pink-50/80 border border-pink-200 p-6 rounded-2xl mb-8 shadow-inner">
+                <h3 class="font-bold text-pink-700 text-lg mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-heart"></i> 給張靖昇的小情書
+                </h3>
+                <p id="letter-txt" class="text-gray-700 leading-relaxed whitespace-pre-line text-sm sm:text-base">
+                    親愛的，生日快樂！🎂
+
+謝謝你一直以來的照顧與陪伴，從第一次約會到現在，跟你在一起的每一個瞬間都超級幸福！雖然這段日子我們有開心也有難過，但幸好我們現在十分穩定、幸福
+
+新的一歲希望你所有的願望都能實現，在專業的道路上，能夠一帆風順，早日實現你賺大錢的夢想，這樣我才能盡早訓練你成為合格的家模哈哈哈哈，工森秋的啦~~
+
+天天開心！愛你喔 ❤️
+                </p>
+            </div>
+
+            <!-- Coupons Section -->
+            <h3 class="font-bold text-gray-800 text-lg mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-ticket text-pink-500"></i> 男友專屬特權兌換券 (點擊蓋章兌換)
+            </h3>
+            <div id="coupons-grid" class="grid sm:grid-cols-2 gap-4">
+                <!-- Dynamically Inserted -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Config Modal (Gear Icon) -->
+    <div id="cfg-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg text-gray-800">⚙️ 遊戲內容後台設定</h3>
+                <button id="cfg-close" class="text-gray-400 hover:text-gray-600 text-xl"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="space-y-4 text-sm">
+                <!-- 新增：9張照片後台拖曳排序 -->
+                <div class="bg-pink-50 p-3 rounded-2xl border border-pink-200">
+                    <label class="block font-bold text-pink-700 mb-1 text-xs">🖼️ 9張照片正確順序設定</label>
+                    <p class="text-[11px] text-gray-500 mb-2">在下方直接拖曳照片調整正確順序：</p>
+                    <div id="cfg-photo-grid" class="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto p-2 bg-white rounded-xl border"></div>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">男友暱稱</label>
+                    <input type="text" id="cfg-name" class="w-full p-2 border rounded-xl">
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">愛的密碼 (4位數字)</label>
+                    <input type="text" id="cfg-pwd" maxlength="4" class="w-full p-2 border rounded-xl">
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">真心話情書內容</label>
+                    <textarea id="cfg-letter" rows="4" class="w-full p-2 border rounded-xl"></textarea>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-2">
+                <button id="cfg-save" class="w-full py-3 bg-pink-500 text-white font-bold rounded-xl shadow hover:bg-pink-600 transition">
+                    儲存變更 ✨
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Preset Data (9張照片)
+        const defaultData = {
+            name: "帥哥哥",
+            pwd: "0105",
+            qa: [
+                { q: "在一起後，我們第一次正式約會的地方？(沙鹿/龍井)", a: ["啡文學"] },
+                { q: "在一起前，張靖昇給我取最親密的暱稱是甚麼？", a: ["親愛的"] },
+                { q: "小甜跟張靖昇第一次見雙方家長的日期？", a: ["2025/3/30 , 2025/4/12 , 2026/2/15", "2025-03-30 , 2025-04-12 , 2026-02-15"] },
+                { q: "小甜第一次去耶晚表演，是表演哪兩首歌曲呢？", a: ["Touch, What is love", "Touch , What is love", "Touch What is love"] },
+                { q: "張靖昇訊息搭訕我的第一句話是甚麼？", a: ["欸我以為同屆說", "欸我以為同屆"] }
+            ],
+            photos: [
+                { id: 1, img: "747265_0.jpg" },
+                { id: 2, img: "747257_0.jpg" },
+                { id: 3, img: "747258_0.jpg" },
+                { id: 4, img: "747259_0.jpg" },
+                { id: 5, img: "747264_0.jpg" },
+                { id: 6, img: "747263_0.jpg" },
+                { id: 7, img: "747260_0.jpg" },
+                { id: 8, img: "747262_0.jpg" },
+                { id: 9, img: "747261_0.jpg" }
+            ],
+            correctOrderIds: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+            letter: `親愛的，生日快樂！🎂\n\n謝謝你一直以來的照顧與陪伴，從第一次約會到現在，跟你在一起的每一個瞬間都超級幸福！雖然這段日子我們有開心也有難過，但幸好我們現在十分穩定、幸福\n\n新的一歲希望你所有的願望都能實現，在專業的道路上，能夠一帆風順，早日實現你賺大錢的夢想，這樣我才能盡早訓練你成為合格的家模哈哈哈哈，工森秋的啦~~\n\n天天開心！愛你喔 ❤️`,
+            coupons: [
+                { title: "旅遊地陪放鬆券 💆‍♂️", desc: "專屬地陪私密行程" },
+                { title: "深夜宵夜券 🍜", desc: "指定宵夜女友買單+陪吃一次" },
+                { title: "無條件原諒券 🥺", desc: "吵架時使用自動化解" },
+                { title: "柳丁特調 🎮", desc: "柳丁隱藏調酒" }
+            ]
+        };
+
+        let sortableInst = null;
+        let adminSortableInst = null;
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            initPhotos();
+            initQA();
+            initCoupons();
+            setupEvents();
+        });
+
+        // Initialize Photos Grid
+        function initPhotos() {
+            const grid = document.getElementById('photo-grid');
+            grid.innerHTML = '';
+            
+            // Randomize initially for gameplay
+            let shuffled = [...defaultData.photos].sort(() => Math.random() - 0.5);
+
+            shuffled.forEach((p, idx) => {
+                const item = document.createElement('div');
+                item.className = "photo-item relative aspect-[3/4] bg-gray-100 rounded-2xl overflow-hidden shadow cursor-grab active:cursor-grabbing border-2 border-white";
+                item.dataset.id = p.id;
+                item.innerHTML = `
+                    <img src="${p.img}" class="w-full h-full object-cover pointer-events-none" alt="Photo ${p.id}">
+                    <div class="absolute top-2 left-2 bg-black/60 text-white font-bold text-xs w-6 h-6 rounded-full flex items-center justify-center backdrop-blur-sm idx-tag">
+                        ${idx + 1}
+                    </div>
+                `;
+                grid.appendChild(item);
+            });
+
+            if (sortableInst) sortableInst.destroy();
+            sortableInst = new Sortable(grid, {
+                animation: 200,
+                onEnd: updateIndices
+            });
+        }
+
+        function updateIndices() {
+            document.querySelectorAll('#photo-grid .idx-tag').forEach((tag, idx) => {
+                tag.textContent = idx + 1;
+            });
+        }
+
+        // Initialize Admin Photos Grid
+        function initAdminPhotos() {
+            const grid = document.getElementById('cfg-photo-grid');
+            grid.innerHTML = '';
+
+            defaultData.correctOrderIds.forEach((id, idx) => {
+                const p = defaultData.photos.find(item => item.id === id);
+                if (!p) return;
+
+                const item = document.createElement('div');
+                item.className = "admin-photo-item relative aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden shadow cursor-move border";
+                item.dataset.id = p.id;
+                item.innerHTML = `
+                    <img src="${p.img}" class="w-full h-full object-cover pointer-events-none">
+                    <div class="absolute bottom-0 inset-x-0 bg-pink-600/80 text-white font-bold text-[9px] text-center py-0.5 idx-label">
+                        第 ${idx + 1} 張
+                    </div>
+                `;
+                grid.appendChild(item);
+            });
+
+            if (adminSortableInst) adminSortableInst.destroy();
+            adminSortableInst = new Sortable(grid, {
+                animation: 150,
+                onEnd: () => {
+                    document.querySelectorAll('.admin-photo-item .idx-label').forEach((el, idx) => {
+                        el.textContent = `第 ${idx + 1} 張`;
+                    });
+                }
+            });
+        }
+
+        // Initialize Stage 2 QA
+        function initQA() {
+            const list = document.getElementById('qa-list');
+            list.innerHTML = '';
+
+            defaultData.qa.forEach((qObj, idx) => {
+                const item = document.createElement('div');
+                item.className = "bg-white p-4 rounded-2xl border border-purple-100 shadow-sm";
+                item.innerHTML = `
+                    <label class="block font-bold text-gray-800 mb-2">Q${idx + 1}: ${qObj.q}</label>
+                    <input type="text" data-qidx="${idx}" class="qa-in w-full p-3 border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:outline-none" placeholder="輸入答案...">
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        // Initialize Stage 5 Coupons
+        function initCoupons() {
+            const grid = document.getElementById('coupons-grid');
+            grid.innerHTML = '';
+
+            defaultData.coupons.forEach((c) => {
+                const item = document.createElement('div');
+                item.className = "coupon-card relative bg-white p-5 rounded-2xl border-2 border-pink-200 shadow-sm cursor-pointer overflow-hidden transition transform hover:-translate-y-1";
+                item.innerHTML = `
+                    <h4 class="font-bold text-pink-600 text-base mb-1">${c.title}</h4>
+                    <p class="text-xs text-gray-500">${c.desc}</p>
+                    <div class="stamp-redeemed">REDEEMED</div>
+                `;
+                item.addEventListener('click', () => {
+                    item.classList.toggle('is-redeemed');
+                    if (item.classList.contains('is-redeemed')) {
+                        confetti({ particleCount: 30, spread: 60, origin: { y: 0.8 } });
+                    }
+                });
+                grid.appendChild(item);
+            });
+        }
+
+        // Setup Buttons and Interactivity
+        function setupEvents() {
+            // Stage 1 Verification
+            document.getElementById('s1-submit').addEventListener('click', () => {
+                const currentOrder = Array.from(document.querySelectorAll('.photo-item')).map(el => parseInt(el.dataset.id));
+                const targetOrder = defaultData.correctOrderIds;
+
+                let isCorrect = true;
+                for (let i = 0; i < targetOrder.length; i++) {
+                    if (currentOrder[i] !== targetOrder[i]) {
+                        isCorrect = false;
+                        break;
+                    }
+                }
+
+                if (isCorrect) {
+                    confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+                    goToStage(2);
+                } else {
+                    alert('順序好像有點小不對喔！再試著調整看看～💪');
+                }
+            });
+
+            // Stage 2 Verification
+            document.getElementById('s2-submit').addEventListener('click', () => {
+                const inputs = document.querySelectorAll('.qa-in');
+                let allCorrect = true;
+
+                inputs.forEach(input => {
+                    const qIdx = parseInt(input.dataset.qidx);
+                    const userVal = input.value.trim().toLowerCase().replace(/\s+/g, '');
+                    const validAnswers = defaultData.qa[qIdx].a.map(ans => ans.toLowerCase().replace(/\s+/g, ''));
+
+                    if (!validAnswers.includes(userVal)) {
+                        allCorrect = false;
+                        input.classList.add('border-red-400');
+                    } else {
+                        input.classList.remove('border-red-400');
+                        input.classList.add('border-green-400');
+                    }
+                });
+
+                if (allCorrect) {
+                    confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+                    goToStage(3);
+                } else {
+                    alert('有題目答錯囉！檢查一下紅框的地方再試一次～');
+                }
+            });
+
+            // Stage 3 Password
+            document.getElementById('s3-submit').addEventListener('click', () => {
+                const val = document.getElementById('pwd-in').value.trim();
+                if (val === defaultData.pwd) {
+                    confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
+                    goToStage(4);
+                } else {
+                    alert('密碼不正確喔！想想我們的紀念日密碼～');
+                }
+            });
+
+            // Stage 4 Candle Blowing
+            document.getElementById('blow-btn').addEventListener('click', blowOutCandle);
+            document.getElementById('flame').addEventListener('click', blowOutCandle);
+
+            // Modal Handlers
+            document.getElementById('cfg-btn').addEventListener('click', () => {
+                document.getElementById('cfg-name').value = defaultData.name;
+                document.getElementById('cfg-pwd').value = defaultData.pwd;
+                document.getElementById('cfg-letter').value = defaultData.letter;
+                initAdminPhotos(); // 載入後台排序
+                document.getElementById('cfg-modal').classList.remove('hidden');
+            });
+
+            document.getElementById('cfg-close').addEventListener('click', () => {
+                document.getElementById('cfg-modal').classList.add('hidden');
+            });
+
+            document.getElementById('cfg-save').addEventListener('click', () => {
+                // 儲存後台拖曳後的最新 9 張照片正確順序
+                const newOrder = Array.from(document.querySelectorAll('.admin-photo-item')).map(el => parseInt(el.dataset.id));
+                defaultData.correctOrderIds = newOrder;
+
+                defaultData.name = document.getElementById('cfg-name').value;
+                defaultData.pwd = document.getElementById('cfg-pwd').value;
+                defaultData.letter = document.getElementById('cfg-letter').value;
+                document.getElementById('letter-txt').innerText = defaultData.letter;
+                
+                initPhotos(); // 重新整理首頁照片
+                document.getElementById('cfg-modal').classList.add('hidden');
+                alert('後台設定與照片順序已成功更新！✨');
+            });
+        }
+
+        function blowOutCandle() {
+            const flame = document.getElementById('flame');
+            flame.style.display = 'none';
+            confetti({ particleCount: 150, spread: 100, origin: { y: 0.5 } });
+            setTimeout(() => {
+                goToStage(5);
+            }, 1000);
+        }
+
+        function goToStage(num) {
+            document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
+            document.getElementById(`s${num}`).classList.remove('hidden');
+
+            const pct = num * 20;
+            document.getElementById('stg-pct').textContent = `${pct}%`;
+            document.getElementById('stg-bar').style.width = `${pct}%`;
+            document.getElementById('stg-lbl').textContent = `闖關進度：第${num}關 / 共五關`;
+        }
+    </script>
+</body>
+</html>
